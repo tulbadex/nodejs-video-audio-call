@@ -1,0 +1,91 @@
+<!-- frontend/views/upload/files.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Uploaded Files</title>
+    <!-- <link rel="stylesheet" href="/css/styles.css"> -->
+    <link href="/static/css/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-900">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Uploaded Files</h1>
+        <% if (error) { %>
+            <p class="text-red-500"><%= error %></p>
+        <% } %>
+
+        <table class="min-w-full bg-white shadow-md rounded-lg overflow-hidden">
+            <thead class="bg-gray-800 text-white">
+                <tr>
+                    <th class="py-2 px-4 w-1/12">File Name</th>
+                    <th class="py-2 px-4 w-10/12">Preview/Download</th>
+                    <th class="py-2 px-4 w-1/12">Extension</th>
+                </tr>
+            </thead>
+            <tbody>
+                <% files.forEach(file => { %>
+                    <tr class="border-b">
+                        <td class="py-2 px-4 w-1/12"><%= file.name %></td>
+                        <td class="py-2 px-4 w-10/12">
+                            <% if (file.mimetype.startsWith('video/')) { %>
+                                <video class="mt-2 w-full" controls>
+                                    <source src="/serverfile/<%= file.path.split('/').pop() %>" type="<%= file.mimetype %>">
+                                    Your browser does not support the video tag.
+                                </video>
+                            <% } else if (file.mimetype.startsWith('audio/')) { %>
+                                <audio class="mt-2 w-full" controls>
+                                    <source src="/serverfile/<%= file.path.split('/').pop() %>" type="<%= file.mimetype %>">
+                                    Your browser does not support the audio tag.
+                                </audio>
+                            <% } else if (file.mimetype.startsWith('image/')) { %>
+                                <img src="/serverfile/<%= file.path.split('/').pop() %>" alt="<%= file.name %>" class="mt-2 max-w-full h-auto">
+                            <% } else if (file.mimetype === 'application/pdf') { %>
+                                <iframe src="/serverfile/<%= file.path.split('/').pop() %>" class="mt-2 w-full h-96"></iframe>
+                            <% } else if (file.mimetype === 'application/vnd.ms-excel' || file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || file.mimetype.startsWith('application/msword') || file.mimetype.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) { %>
+                                <iframe src="https://docs.google.com/gview?url=<%= encodeURIComponent(`http://${req.headers.host}/serverfile/${file.path.split('/').pop()}`) %>&embedded=true" class="mt-2 w-full h-96"></iframe>
+                            <% } else { %>
+                                <a href="/serverfile/<%= file.path.split('/').pop() %>" class="text-blue-500 underline"><%= file.name %></a>
+                            <% } %>
+                        </td>
+                        <td class="py-2 px-4 w-1/12"><%= file.mimetype %></td>
+                    </tr>
+                <% }) %>
+            </tbody>
+        </table>
+
+        <% if (totalCount > pageSize) { %>
+            <!-- <div class="mt-4">
+                <p>Page <%= currentPage %> of <%= Math.ceil(totalCount / pageSize) %></p>
+                <div class="flex space-x-2">
+                    <% for (let i = 1; i <= Math.ceil(totalCount / pageSize); i++) { %>
+                        <% if (i === currentPage) { %>
+                            <span class="px-3 py-1 bg-gray-500 text-white rounded"><%= i %></span>
+                        <% } else { %>
+                            <a href="/files?page=<%= i %>&pageSize=<%= pageSize %>" class="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"><%= i %></a>
+                        <% } %>
+                    <% } %>
+                </div>
+            </div> -->
+
+
+            <nav class="mt-4">
+                <p>Page <%= currentPage %> of <%= Math.ceil(totalCount / pageSize) %></p>
+                <ul class="flex justify-center space-x-2">
+                    <% for (let i = 1; i <= totalCount; i++) { %>
+                        <% if (i === currentPage) { %>
+                            <span class="px-4 py-2 bg-gray-300 rounded"><%= i %></span>
+                        <% } else { %>
+                            <a href="/files?page=<%= i %>" class="px-4 py-2 bg-blue-500 text-white rounded"><%= i %></a>
+                        <% } %>
+                    <% } %>
+                </ul>
+            </nav>
+        <% } %>
+    </div>
+
+    <div class="container mx-auto p-4">
+        <a href="/" class="inline-block mt-4 px-4 py-2 bg-blue-500 text-white font-semibold rounded hover:bg-blue-600">Upload Another File</a>
+    </div>
+</body>
+</html>
