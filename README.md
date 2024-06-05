@@ -28,7 +28,7 @@ This is a real-time video and audio call application built using Socket.io, Post
 
 1. **Clone the repository:**
    ```
-    git clone https://github.com/your-username/your-repo.git
+    git clone https://github.com/tulbadex/nodejs-video-audio-call.git
     cd your-repo
    ```
 2. **Install dependencied**
