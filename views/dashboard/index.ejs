@@ -212,7 +212,7 @@
         socket.on('call-made', data => {
 
             if (isCallOngoing) {
-                socket.emit('reject-call', { from: data.from, to: data.to });
+                // socket.emit('reject-call', { from: data.from, to: data.to });
                 return;
             }
             isInitiator = false;
@@ -378,14 +378,14 @@
         }
 
         function rejectCall() {
-            socket.emit('reject-call', { to: callReceiver, from: '<%= user.username %>' });
+            // socket.emit('reject-call', { to: callReceiver, from: '<%= user.username %>' });
             endCall();
         }
 
-        socket.on('call-rejected', data => {
+        /* socket.on('call-rejected', data => {
             // alert(`User ${data.from} has rejected your call.`);
             endCall();
-        });
+        }); */
 
         // socket.on('call-ended', fetchRecentCalls);
 

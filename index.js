@@ -141,7 +141,7 @@ io.on('connection', (socket) => {
         updateUsersList();
     });
 
-    socket.on('reject-call', (data) => {
+    /* socket.on('reject-call', (data) => {
         const { from, to } = data;
         if (users[to]) {
             io.to(users[to]).emit('call-rejected', { from });
@@ -151,7 +151,7 @@ io.on('connection', (socket) => {
         updateUsersList();
         getRecentCallList(from);
         console.log('Call rejected from:', from, 'to:', to);
-    });
+    }); */
 
     socket.on('end-call', (data) => {
         const { from, to } = data;
