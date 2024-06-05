@@ -27,35 +27,35 @@ This is a real-time video and audio call application built using Socket.io, Post
 ## Installation
 
 1. **Clone the repository:**
-   ```
-    git clone https://github.com/tulbadex/nodejs-video-audio-call.git
-    cd your-repo
-   ```
+```
+git clone https://github.com/tulbadex/nodejs-video-audio-call.git
+cd your-repo
+```
 2. **Install dependencied**
-    ```
-        npm install
-        # or if you prefer yarn
-        yarn install
-    ```
+```
+    npm install
+    # or if you prefer yarn
+    yarn install
+```
 3. **Set up PostgreSQL database:**
 
-    * Create a PostgreSQL database to align with the database name in config/config.js and config.json
-    * install sequelize-cli using
-    ``` npm install --save-dev sequelize-cli ```
-    * migrate the table using
-    ``` npx sequelize-cli db:migrate ```
-    * install nodemon globally
-    ``` npm install -g nodemon ```
-    * To build css run
-    ``` npm run build:css ```
+* Create a PostgreSQL database to align with the database name in config/config.js and config.json
+* install sequelize-cli using
+``` npm install --save-dev sequelize-cli ```
+* migrate the table using
+``` npx sequelize-cli db:migrate ```
+* install nodemon globally
+``` npm install -g nodemon ```
+* To build css run
+``` npm run build:css ```
 
 ## Usage
 1. Start the server:
-    ```
-        npm run dev
-        # or if you prefer yarn
-        yarn run dev
-    ```
+```
+    npm run dev
+    # or if you prefer yarn
+    yarn run dev
+```
 2. Access the application:
     Open your browser and navigate to http://localhost:5600.
 
