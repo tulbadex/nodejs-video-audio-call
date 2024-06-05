@@ -33,9 +33,9 @@ cd your-repo
 ```
 2. **Install dependencied**
 ```
-    npm install
-    # or if you prefer yarn
-    yarn install
+npm install
+# or if you prefer yarn
+yarn install
 ```
 3. **Set up PostgreSQL database:**
 
@@ -52,9 +52,9 @@ cd your-repo
 ## Usage
 1. Start the server:
 ```
-    npm run dev
-    # or if you prefer yarn
-    yarn run dev
+npm run dev
+# or if you prefer yarn
+yarn run dev
 ```
 2. Access the application:
     Open your browser and navigate to http://localhost:5600.
