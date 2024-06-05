@@ -1,0 +1,40 @@
+<header class="bg-white shadow">
+    <div class="container mx-auto px-4 py-6 flex justify-between items-center">
+        <div class="flex items-center">
+            <h1 class="text-3xl font-bold ml-4">CallConnect</h1>
+            <a href="/" class="text-blue-500 hover:underline mx-2 text-xl font-semibold <%= currentUrl === '/' ? 'active' : '' %>">Home</a>
+        </div>
+        <div>
+            <% if (!user) { %>
+                <a href="/login" class="text-blue-500 hover:underline mx-2 <%= currentUrl === '/login' ? 'active' : '' %>">Login</a>
+                <a href="/register" class="text-blue-500 hover:underline mx-2 <%= currentUrl === '/register' ? 'active' : '' %>">Register</a>
+            <% } else { %>
+                <a href="/dashboard" class="text-blue-500 hover:underline mx-2 <%= currentUrl === '/dashboard' ? 'active' : '' %>">Dashboard</a>
+                <a href="/logout" class="text-blue-500 hover:underline mx-2">Logout</a>
+            <% } %>
+        </div>
+    </div>
+</header>
+
+<% if (message) { %>
+    <div class="container mx-auto px-4 py-4">
+        <div class="<%= status === true ? 'bg-green-100 border-green-400 text-green-700' : 'bg-red-100 border-red-400 text-red-700' %> px-4 py-3 rounded relative" role="alert" id="flash-message">
+            <strong class="font-bold"><%= message %></strong>
+            <span class="absolute top-0 bottom-0 right-0 px-4 py-3" id="flash-close">
+                <svg class="fill-current h-6 w-6 <%= status === true ? 'text-green-500' : 'text-red-500' %>" role="button" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><title>Close</title><path d="M14.348 5.652a.5.5 0 10-.707-.707L10 8.586 6.36 4.945a.5.5 0 00-.707.707L9.293 10l-3.64 3.64a.5.5 0 00.707.707L10 11.414l3.64 3.64a.5.5 0 00.707-.707L10.707 10l3.641-3.64z"/></svg>
+            </span>
+        </div>
+    </div>
+<% } %>
+
+<script>
+    document.addEventListener('DOMContentLoaded', (event) => {
+        const closeBtn = document.getElementById('flash-close');
+        const flashMessage = document.getElementById('flash-message');
+        if (closeBtn && flashMessage) {
+            closeBtn.addEventListener('click', () => {
+                flashMessage.style.display = 'none';
+            });
+        }
+    });
+</script>

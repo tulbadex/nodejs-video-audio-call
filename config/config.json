@@ -3,20 +3,20 @@
     "development": {
       "username": "postgres",
       "password": "password",
-      "database": "video_audio",
+      "database": "video_audio_call",
       "host": "127.0.0.1",
       "dialect": "postgres"
     },
     "test": {
       "username": "postgres",
-      "password": null,
+      "password": "password",
       "database": "database_test",
       "host": "127.0.0.1",
       "dialect": "postgres"
     },
     "production": {
       "username": "postgres",
-      "password": null,
+      "password": "password",
       "database": "database_production",
       "host": "127.0.0.1",
       "dialect": "postgres"

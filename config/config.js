@@ -1,5 +1,10 @@
 module.exports = {
     UPLOAD_DIR: '/public/uploads/',
-    MONGODB_URI: 'mongodb://localhost:27017/file_upload_db',
-    DATABASE_URL: 'postgres://postgres:password@localhost:5432/video_audio'
+    database: 'video_audio_call',
+    username: 'postgres',
+    password: 'password',
+    host: 'localhost',
+    dialect: 'postgres',
+    secret: 'your_jwt_secret_key', // Replace with a secure key
+    DATABASE_URL: 'postgres://postgres:password@localhost:5432/video_audio_call'
 };

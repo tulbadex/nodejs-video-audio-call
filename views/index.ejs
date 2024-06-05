@@ -1,0 +1,45 @@
+<%- include('partial/header', { title: 'Video and Audio Call Website' }) %>
+<body class="bg-gray-100 text-gray-800">
+    <!-- Header Section -->
+    <%- include('partial/menu') %>
+
+    <!-- Main Content Section -->
+    <main class="container mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold mb-4">Welcome to CallConnect</h2>
+        <p class="mb-4">
+            CallConnect is a cutting-edge platform that provides seamless video and audio call capabilities. Whether you need to connect with friends, family, or colleagues, our platform ensures high-quality, secure, and reliable communication.
+        </p>
+        <p class="mb-4">
+            Our platform uses the latest WebRTC technology to enable peer-to-peer communication, making it easy to initiate and receive calls from anywhere in the world. With CallConnect, you can enjoy crystal clear audio and high-definition video, all within a user-friendly interface.
+        </p>
+        <h3 class="text-xl font-bold mb-2">Features:</h3>
+        <ul class="list-disc list-inside mb-4">
+            <li>High-quality video and audio calls</li>
+            <li>End-to-end encryption for secure communication</li>
+            <li>Easy-to-use interface</li>
+            <li>Cross-platform support</li>
+            <li>Real-time messaging</li>
+        </ul>
+        <p class="mb-4">
+            To get started, simply register for an account or log in if you already have one. Once you're logged in, you can start making calls right away. Our platform is designed to be intuitive and easy to use, so you can focus on what matters most - your conversations.
+        </p>
+        <p class="mb-4">
+            If you have any questions or need assistance, our support team is here to help. Thank you for choosing CallConnect for your communication needs.
+        </p>
+        
+        <% if (!user) { %>
+            <div class="flex justify-center mt-8">
+                <a href="/register" class="bg-blue-500 text-white py-2 px-4 rounded-lg mx-2">Get Started</a>
+                <a href="/login" class="bg-gray-500 text-white py-2 px-4 rounded-lg mx-2">Login</a>
+            </div>
+        <% } else { %>
+            <div class="flex justify-center mt-8">
+                <a href="/dashboard" class="bg-blue-500 text-white py-2 px-4 rounded-lg mx-2">Dashboard</a>
+            </div>
+        <% } %>
+    </main>
+
+    <!-- Footer Section -->
+    <%- include('partial/footer') %>
+</body>
+</html>

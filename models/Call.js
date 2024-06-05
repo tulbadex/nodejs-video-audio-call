@@ -1,17 +1,20 @@
-// backend/models/File.js
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
 
-const File = sequelize.define('File', {
-    name: {
+const Call = sequelize.define('Call', {
+    caller: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    path: {
+    receiver: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    mimetype: {
+    duration: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    recordingPath: {
         type: DataTypes.STRING,
         allowNull: false
     }
@@ -19,4 +22,4 @@ const File = sequelize.define('File', {
     timestamps: true
 });
 
-module.exports = File;
+module.exports = Call;

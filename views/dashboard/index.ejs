@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<%- include('../partial/header', { title: 'Dashboard - CallConnect' }) %>
+
+<body class="bg-gray-100 text-gray-800">
+    <!-- Header Section -->
+    <%- include('../partial/menu') %>
+
+    <div class="container mx-auto px-4 py-8">
+        <h2 class="text-2xl font-bold mb-4">Welcome, <%= user.username %></h2>
+
+        <!-- User List Section -->
+        <div class="mb-8">
+            <h3 class="text-lg font-semibold mb-2">Users</h3>
+            <ul id="user-list" class="bg-white p-4 rounded-lg shadow">
+                <!-- List of users will be populated here -->
+            </ul>
+        </div>
+
+        <!-- Call Section -->
+        <div id="call-section" class="hidden mb-8">
+            <h3 class="text-lg font-semibold mb-2">Call</h3>
+            <div class="flex justify-between items-center bg-white p-4 rounded-lg shadow">
+                <video id="local-video" autoplay class="w-1/2"></video>
+                <video id="remote-video" autoplay class="w-1/2"></video>
+            </div>
+            <div class="flex justify-between items-center mt-4">
+                <button id="accept-call" class="bg-green-500 text-white px-4 py-2 rounded-lg hidden">Accept Call</button>
+                <button id="end-call" class="bg-red-500 text-white px-4 py-2 rounded-lg hidden">End Call</button>
+                <!-- Call Timer -->
+                <span id="call-timer" class="text-gray-700 hidden"></span>
+            </div>
+        </div>
+
+        <!-- Recent Calls Section -->
+        <div>
+            <h3 class="text-lg font-semibold mb-2">Recent Calls</h3>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <!-- List of recent calls -->
+                <ul id="recent-calls">
+                    <!-- Recent calls will be populated here -->
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Audio element for incoming call alert tone -->
+    <audio id="incoming-call-tone" src="/static/ringtone/nokia-62618.mp3" preload="auto"></audio>
+
+    <!-- Footer Section -->
+    <%- include('../partial/footer') %>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://unpkg.com/simple-peer@9.10.0/simplepeer.min.js"></script>
+    <script>
+        const socket = io();
+        const userList = document.getElementById('user-list');
+        const localVideo = document.getElementById('local-video');
+        const remoteVideo = document.getElementById('remote-video');
+        const callSection = document.getElementById('call-section');
+        const acceptCallButton = document.getElementById('accept-call');
+        const endCallButton = document.getElementById('end-call');
+        const recentCalls = document.getElementById('recent-calls');
+        const incomingCallTone = document.getElementById('incoming-call-tone');
+        const callTimer = document.getElementById('call-timer');
+
+        let localStream;
+        let remoteStream;
+        let peer;
+        let mediaRecorder;
+        let recordedChunks = [];
+        let callStartTime;
+        let isInitiator = false;
+        let callReceiver;
+        let callTimerInterval;
+        let isCallOngoing = false;
+
+        // Register the user with the server
+        socket.emit('register', '<%= user.username %>');
+
+        socket.on('update-user-list', users => {
+            userList.innerHTML = '';
+            users.filter(user => user.username !== '<%= user.username %>').forEach(user => {
+
+                const isCallerB = user.username === callReceiver;
+                const isDisabled = isCallOngoing || isCallerB || (!isInitiator && isCallerB)
+
+                /*console.log(user.username)
+                console.log('<%= user.username %>')
+                console.log(isCallerB)
+                console.log(callReceiver)
+                console.log(isDisabled)
+                console.log(isCallOngoing)
+                console.log(isInitiator)*/
+
+                const userItem = document.createElement('li');
+                userItem.classList.add('flex', 'justify-between', 'items-center', 'border-b', 'border-gray-300', 'py-2');
+                userItem.innerHTML = `
+                    <span>${user.username} ${user.online ? '<span class="text-green-500">(Online)</span>' : '<span class="text-red-500">(Offline)</span>'}</span>
+                    <div>
+                        <button ${isDisabled ? 'disabled' : ''} onclick="initiateCall('${user.username}', 'audio')" class="bg-green-500 text-white px-4 py-2 rounded-lg mr-2 ${isDisabled ? 'opacity-0 cursor-not-allowed hidden' : ''}">Audio</button>
+                        <button ${isDisabled ? 'disabled' : ''} onclick="initiateCall('${user.username}', 'video')" class="bg-blue-500 text-white px-4 py-2 rounded-lg ${isDisabled ? 'opacity-0 cursor-not-allowed hidden' : ''}">Video</button>
+                    </div>
+                `;
+                userList.appendChild(userItem);
+            });
+        });
+
+        async function initMedia(callType) {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({
+                    video: callType === 'video',
+                    audio: true
+                });
+                localVideo.srcObject = localStream;
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+            }
+        }
+
+        function setupMediaRecorder() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 1280; // Double the width to place videos side by side
+            canvas.height = 480; // Single height as both videos are placed side by side
+        
+            // Apply CSS filters to the canvas for enhancement
+            canvas.style.filter = 'contrast(1.2) saturate(1.2)';
+        
+            function drawCanvas() {
+                if (localStream && remoteStream) {
+                    const localVideoTrack = localStream.getVideoTracks()[0];
+                    const remoteVideoTrack = remoteStream.getVideoTracks()[0];
+        
+                    if (localVideoTrack && remoteVideoTrack) {
+                        const localSettings = localVideoTrack.getSettings();
+                        const remoteSettings = remoteVideoTrack.getSettings();
+        
+                        // Draw videos side by side
+                        if (localVideo.readyState === localVideo.HAVE_ENOUGH_DATA && remoteVideo.readyState === remoteVideo.HAVE_ENOUGH_DATA) {
+                            ctx.drawImage(localVideo, 0, 0, canvas.width / 2, canvas.height);
+                            ctx.drawImage(remoteVideo, canvas.width / 2, 0, canvas.width / 2, canvas.height);
+                        }
+                    }
+                }
+                requestAnimationFrame(drawCanvas);
+            }
+            drawCanvas();
+        
+            const canvasStream = canvas.captureStream();
+            const combinedStream = new MediaStream([
+                ...localStream.getAudioTracks(),
+                ...canvasStream.getVideoTracks()
+            ]);
+        
+            mediaRecorder = new MediaRecorder(combinedStream);
+        
+            mediaRecorder.ondataavailable = event => {
+                if (event.data.size > 0) {
+                    recordedChunks.push(event.data);
+                }
+            };
+        
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                saveRecording(blob, callReceiver);
+                recordedChunks = [];
+                // fetchRecentCalls()
+            };
+        }
+
+        async function initiateCall(username, callType) {
+            await initMedia(callType);
+
+            callSection.classList.remove('hidden');
+            isInitiator = true;
+            callReceiver = username;
+            callStartTime = new Date();
+
+            peer = new SimplePeer({
+                initiator: true,
+                trickle: false,
+                stream: localStream,
+                config: {
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                }
+            });
+
+            peer.on('signal', data => {
+                socket.emit('call-user', {
+                    signal: data,
+                    to: username,
+                    from: '<%= user.username %>',
+                    type: callType
+                });
+            });
+
+            peer.on('stream', stream => {
+                remoteStream = stream;
+                remoteVideo.srcObject = remoteStream;
+                setupMediaRecorder();
+            });
+
+            peer.on('close', endCall);
+
+            peer.on('error', error => {
+                console.error('Peer connection error:', error);
+            });
+
+            endCallButton.classList.remove('hidden');
+        }
+
+        socket.on('call-made', data => {
+
+            if (isCallOngoing) {
+                socket.emit('reject-call', { from: data.from, to: data.to });
+                return;
+            }
+            isInitiator = false;
+
+            if (!peer) {
+                initiateReceiveCall(data.from, data.signal, data.type);
+            } else {
+                peer.signal(data.signal);
+            }
+        });
+
+        async function initiateReceiveCall(username, signal, callType) {
+            await initMedia(callType);
+
+            callSection.classList.remove('hidden');
+            callReceiver = username;
+
+            peer = new SimplePeer({
+                initiator: false,
+                trickle: false,
+                stream: localStream,
+                config: {
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                }
+            });
+
+            peer.on('signal', data => {
+                socket.emit('make-answer', {
+                    signal: data,
+                    to: username,
+                    from: '<%= user.username %>',
+                    type: callType
+                });
+            });
+
+            peer.on('stream', stream => {
+                remoteStream = stream;
+                remoteVideo.srcObject = remoteStream;
+                setupMediaRecorder();
+            });
+
+            peer.on('close', endCall);
+
+            peer.on('error', error => {
+                console.error('Peer connection error:', error);
+            });
+
+            peer.signal(signal);
+
+            if (!isInitiator) {
+                incomingCallTone.loop = true;
+                incomingCallTone.play();
+                acceptCallButton.classList.remove('hidden');
+                endCallButton.classList.remove('hidden');
+            }
+        }
+
+        socket.on('answer-made', data => {
+            peer.signal(data.signal);
+            if (!isInitiator) {
+                callStartTime = new Date(data.callStartTime);
+            } else {
+                callStartTime = new Date();
+            }
+            //startCallTimer();
+        });
+
+        socket.on('call-accepted', data => {
+            if (isInitiator) {
+                callStartTime = new Date();
+                startCallTimer();
+            }
+        });
+
+        socket.on('user-unavailable', data => {
+            alert(`User ${data.to} is unavailable at the moment.`);
+            endCall();
+        });
+
+        acceptCallButton.addEventListener('click', () => {
+            callStartTime = new Date();
+            if (mediaRecorder && mediaRecorder.state === "inactive") {
+                mediaRecorder.start();
+            }
+            startCallTimer();
+            incomingCallTone.pause();
+            incomingCallTone.currentTime = 0;
+            incomingCallTone.loop = false;
+            acceptCallButton.classList.add('hidden');
+            endCallButton.classList.remove('hidden');
+            callTimer.classList.remove('hidden');
+            socket.emit('accept-call', { to: callReceiver, from: '<%= user.username %>' });
+
+            isCallOngoing = true;
+        });
+
+        // Emit the end-call event when the call ends
+        endCallButton.addEventListener('click', () => {
+            endCall();
+            // socket.emit('end-call', { from: '<%= user.username %>', to: callReceiver });
+            // rejectCall()
+        });
+
+        socket.on('call-ended', data => {
+            endCall();
+        });
+
+        function endCall() {
+            clearInterval(callTimerInterval);
+            callTimer.classList.add('hidden');
+            callTimer.textContent = '';
+        
+            if (mediaRecorder && mediaRecorder.state === "recording") {
+                mediaRecorder.stop();
+                mediaRecorder = null;
+            }
+        
+            if (peer) {
+                peer.destroy();
+                peer = null;
+            }
+        
+            // Stop all local stream tracks
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                // localStream.getVideoTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+        
+            // Stop all remote stream tracks
+            if (remoteStream) {
+                remoteStream.getTracks().forEach(track => track.stop());
+                // remoteStream.getVideoTracks().forEach(track => track.stop());
+                remoteStream = null;
+            }
+        
+            // Clear video elements
+            if (localVideo.srcObject) {
+                localVideo.srcObject = null;
+
+            }
+            if (remoteVideo.srcObject) {
+                remoteVideo.srcObject = null;
+            }
+        
+            incomingCallTone.pause();
+            incomingCallTone.currentTime = 0;
+            incomingCallTone.loop = false;
+        
+            callSection.classList.add('hidden');
+            acceptCallButton.classList.add('hidden');
+            endCallButton.classList.add('hidden');
+
+            localVideo.classList.add('hidden');
+            remoteVideo.classList.add('hidden');
+            isInitiator = false;
+
+            // Fetch recent calls after the call ends
+            // fetchRecentCalls();
+
+            isCallOngoing = false;
+            window.location.reload();
+        }
+
+        function rejectCall() {
+            socket.emit('reject-call', { to: callReceiver, from: '<%= user.username %>' });
+            endCall();
+        }
+
+        socket.on('call-rejected', data => {
+            // alert(`User ${data.from} has rejected your call.`);
+            endCall();
+        });
+
+        // socket.on('call-ended', fetchRecentCalls);
+
+        function saveRecording(blob, username) {
+            const duration = new Date() - callStartTime;
+            const durationString = new Date(duration).toISOString().substr(11, 8);
+
+            const formData = new FormData();
+            formData.append('recording', blob, 'recording.webm');
+            formData.append('caller', isInitiator ? '<%= user.username %>' : username);
+            formData.append('receiver', isInitiator ? username : '<%= user.username %>');
+            formData.append('duration', durationString);
+
+            fetch('/save-recording', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.text().then(text => { throw new Error(text) });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Recording saved:', data);
+            })
+            .catch(error => {
+                console.error('Error saving recording:', error.message);
+            });
+        }
+
+        async function fetchRecentCalls() {
+            // Implement the logic to fetch recent calls from your server
+            try {
+                const response = await fetch('/recent-calls');
+                const calls = await response.json();
+                recentCalls.innerHTML = '';
+                calls.forEach(call => {
+                    const callItem = document.createElement('li');
+                    const date = new Date(call.createdAt);
+                    const formattedDate = date.toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: 'numeric',
+                        hour12: true
+                    });
+                    callItem.classList.add('flex', 'justify-between', 'items-center', 'border-b', 'border-gray-300', 'py-2');
+                    // callItem.textContent = `${call.caller} called ${call.receiver} at ${formattedDate} Duration: ${call.duration}`;
+                    callItem.innerHTML = `
+                        <span>${call.caller} called ${call.receiver}</span>
+                        <span>at ${formattedDate}</span>
+                        <span>Duration: ${call.duration}</span>
+                    `;
+                    recentCalls.appendChild(callItem);
+                });
+            } catch (error) {
+                console.error('Error fetching recent calls:', error);
+            }
+        }
+
+        function fetchUserList() {
+            socket.emit('get-users');
+            socket.emit('update-recent-call-list');
+        }
+
+        socket.on('update-recent-call-list', calls => {
+            recentCalls.innerHTML = '';
+            calls.forEach(call => {
+                const callItem = document.createElement('li');
+                const date = new Date(call.createdAt);
+                const formattedDate = date.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                    hour: 'numeric',
+                    minute: 'numeric',
+                    hour12: true
+                });
+                callItem.classList.add('flex', 'justify-between', 'items-center', 'border-b', 'border-gray-300', 'py-2');
+                callItem.innerHTML = `
+                    <span>${call.caller} called ${call.receiver}</span>
+                    <span>at ${formattedDate}</span>
+                    <span>Duration: ${call.duration}</span>
+                `;
+                recentCalls.appendChild(callItem);
+            });
+        });        
+
+        function startCallTimer() {
+            callTimer.classList.remove('hidden');
+            callTimerInterval = setInterval(() => {
+                const elapsedTime = new Date() - callStartTime;
+                const minutes = Math.floor(elapsedTime / 60000);
+                const seconds = Math.floor((elapsedTime % 60000) / 1000);
+                callTimer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // document.addEventListener('DOMContentLoaded', fetchRecentCalls);
+
+    </script>
+</body>
+</html>
